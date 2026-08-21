@@ -10,9 +10,11 @@
     "preview": "vite preview",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run --project rules\"",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run --project rules --no-file-parallelism\"",
     "emulators": "firebase emulators:start",
-    "deploy": "npm run build && firebase deploy --only firestore:rules,firestore:indexes,hosting"
+    "deploy": "npm run build && firebase deploy --only firestore:rules,firestore:indexes,hosting",
+    "seed": "node scripts/seed-emulator.mjs",
+    "dev:emulator": "VITE_USE_EMULATORS=true vite"
   },
   "dependencies": {
     "firebase": "^12.4.0"

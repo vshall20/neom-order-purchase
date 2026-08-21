@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   onSnapshot,
   runTransaction,
   serverTimestamp,
@@ -30,6 +31,76 @@ function totalOf(items: readonly OrderItem[]): number {
   return items.reduce((s, it) => s + it.qty * it.price, 0);
 }
 
+/**
+ * Errors that can mean "someone else took this PO number first".
+ *
+ * Firestore evaluates security rules *before* a transaction's read-version
+ * precondition. The counter rule permits only `value + 1`, so a transaction
+ * that loses the race is rejected as `permission-denied` — which the SDK
+ * treats as permanent and will not retry — rather than `aborted`, which it
+ * would. Without the retry below, simultaneous creates fail outright instead
+ * of queueing up behind each other.
+ */
+const CONTENTION_CODES = new Set(['permission-denied', 'aborted', 'failed-precondition']);
+const MAX_ATTEMPTS = 12;
+
+function errorCode(e: unknown): string {
+  return typeof e === 'object' && e !== null && 'code' in e ? String((e as { code: unknown }).code) : '';
+}
+
+async function counterValue(): Promise<number> {
+  const snap = await getDoc(counterRef());
+  return snap.exists() ? ((snap.data().value as number) ?? 0) : 0;
+}
+
+function backoff(attempt: number): Promise<void> {
+  // Exponential with jitter, so a burst of clients spreads out instead of
+  // retrying in lockstep and colliding again.
+  const ms = Math.min(400, 15 * 2 ** attempt) * (0.5 + Math.random());
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Take the next PO number and write the order and its audit entry atomically.
+ *
+ * `build` receives the reserved sequence and returns the order body; it must
+ * be free of side effects, because a lost race re-runs it.
+ */
+async function createWithPoNumber(
+  user: UserProfile,
+  build: (poNumber: string, poSeq: number) => Record<string, unknown>,
+  audit: (poNumber: string, orderId: string) => Parameters<typeof writeAudit>[3],
+): Promise<string> {
+  const orderRef = doc(ordersCol());
+  const year = new Date().getFullYear();
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const before = await counterValue();
+    try {
+      await runTransaction(db, async (tx) => {
+        const cRef = counterRef();
+        const snap = await tx.get(cRef);
+        const next = (snap.exists() ? ((snap.data().value as number) ?? 0) : 0) + 1;
+        if (snap.exists()) tx.update(cRef, { value: next });
+        else tx.set(cRef, { value: next });
+
+        const poNumber = poNumberFor(next, year);
+        tx.set(orderRef, build(poNumber, next));
+        writeAudit(db, tx, user, audit(poNumber, orderRef.id));
+      });
+      return orderRef.id;
+    } catch (e) {
+      if (!CONTENTION_CODES.has(errorCode(e))) throw e;
+      // If the counter has not moved, nobody beat us to it — this is a real
+      // permission failure, not contention, so surface it immediately rather
+      // than burning retries on a request that will never be allowed.
+      if ((await counterValue()) === before) throw e;
+      await backoff(attempt);
+    }
+  }
+  throw new Error('Too many orders are being created at once. Try again in a moment.');
+}
+
 export interface NewOrderInput {
   vendor: string;
   expectedDate: Date | null;
@@ -48,27 +119,20 @@ export interface NewOrderInput {
  */
 export async function createOrder(user: UserProfile, input: NewOrderInput): Promise<string> {
   const items = input.items;
-  const orderRef = doc(ordersCol());
+  const total = totalOf(items);
 
-  await runTransaction(db, async (tx) => {
-    const cRef = counterRef();
-    const snap = await tx.get(cRef);
-    const next = (snap.exists() ? (snap.data().value as number) : 0) + 1;
-    if (snap.exists()) tx.update(cRef, { value: next });
-    else tx.set(cRef, { value: next });
-
-    const poNumber = poNumberFor(next, new Date().getFullYear());
-
-    tx.set(orderRef, {
+  return createWithPoNumber(
+    user,
+    (poNumber, poSeq) => ({
       poNumber,
-      poSeq: next,
+      poSeq,
       status: input.placeImmediately ? 'pending' : 'draft',
       vendor: input.vendor.trim(),
       vendorLower: input.vendor.trim().toLowerCase(),
       note: '',
       items,
       itemNames: itemNamesOf(items),
-      total: totalOf(items),
+      total,
       expectedDate: input.expectedDate ? Timestamp.fromDate(input.expectedDate) : null,
       createdBy: actorOf(user),
       createdAt: serverTimestamp(),
@@ -80,21 +144,18 @@ export async function createOrder(user: UserProfile, input: NewOrderInput): Prom
       deleted: false,
       deletedBy: null,
       deletedAt: null,
-    });
-
-    writeAudit(db, tx, user, {
+    }),
+    (poNumber, orderId) => ({
       action: 'order.create',
       targetType: 'order',
-      targetId: orderRef.id,
+      targetId: orderId,
       poNumber,
       summary: `Created ${poNumber} for ${input.vendor.trim()}${
         input.placeImmediately ? ' and placed it' : ' as a draft'
       }`,
-      changes: { status: input.placeImmediately ? 'pending' : 'draft', total: totalOf(items) },
-    });
-  });
-
-  return orderRef.id;
+      changes: { status: input.placeImmediately ? 'pending' : 'draft', total },
+    }),
+  );
 }
 
 export interface NewRequirementInput {
@@ -109,20 +170,12 @@ export async function submitRequirement(
   input: NewRequirementInput,
 ): Promise<string> {
   const items = input.items.map((it) => ({ ...it, price: 0, received: 0 }));
-  const orderRef = doc(ordersCol());
 
-  await runTransaction(db, async (tx) => {
-    const cRef = counterRef();
-    const snap = await tx.get(cRef);
-    const next = (snap.exists() ? (snap.data().value as number) : 0) + 1;
-    if (snap.exists()) tx.update(cRef, { value: next });
-    else tx.set(cRef, { value: next });
-
-    const poNumber = poNumberFor(next, new Date().getFullYear());
-
-    tx.set(orderRef, {
+  return createWithPoNumber(
+    user,
+    (poNumber, poSeq) => ({
       poNumber,
-      poSeq: next,
+      poSeq,
       status: 'requirement',
       vendor: '',
       vendorLower: '',
@@ -141,19 +194,16 @@ export async function submitRequirement(
       deleted: false,
       deletedBy: null,
       deletedAt: null,
-    });
-
-    writeAudit(db, tx, user, {
+    }),
+    (poNumber, orderId) => ({
       action: 'order.submit_requirement',
       targetType: 'order',
-      targetId: orderRef.id,
+      targetId: orderId,
       poNumber,
       summary: `Submitted requirement ${poNumber} (${items.length} item${items.length === 1 ? '' : 's'})`,
       changes: { items: items.map((i) => `${i.name} x${i.qty}`) },
-    });
-  });
-
-  return orderRef.id;
+    }),
+  );
 }
 
 /** Place a saved draft (admin). draft -> pending. */

@@ -174,3 +174,76 @@
   .brand-logo img{height:38px; width:auto; flex-shrink:0;}
   .login-brand img{height:76px; width:auto; margin:0 auto 12px auto; display:block;}
   ::placeholder{color:#B7AF9A;}
+
+  /* ================================================================
+     v1 additions — components the prototype did not have:
+     toasts, list search/filter controls, pagination, soft-delete and
+     pending-account row states, inline admin editing.
+     ================================================================ */
+
+  /* ---------- toasts (undo affordance for soft delete) ---------- */
+  #toast-host{position:fixed; left:20px; bottom:20px; z-index:200; display:flex; flex-direction:column; gap:8px;}
+  .toast{display:flex; align-items:center; gap:12px; min-width:280px; max-width:420px;
+    background:var(--ink); color:var(--paper); border-radius:8px; padding:12px 12px 12px 16px;
+    box-shadow:0 8px 28px rgba(28,43,51,0.28); font-size:13px; line-height:1.4;
+    animation:toast-in 180ms ease-out;}
+  .toast-error{background:var(--red);}
+  .toast-msg{flex:1;}
+  .toast-action{background:transparent; border:1px solid rgba(247,244,236,0.4); color:var(--paper);
+    font:inherit; font-weight:600; padding:5px 12px; border-radius:5px; cursor:pointer;}
+  .toast-action:hover{background:rgba(247,244,236,0.12);}
+  .toast-close{background:transparent; border:none; color:rgba(247,244,236,0.55); font-size:20px;
+    line-height:1; cursor:pointer; padding:0 4px;}
+  .toast-close:hover{color:var(--paper);}
+  .toast-out{opacity:0; transform:translateY(6px); transition:opacity 160ms, transform 160ms;}
+  @keyframes toast-in{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+
+  /* ---------- list controls ---------- */
+  .list-controls{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+  .search-box{display:flex; align-items:center; gap:8px; background:var(--paper-2);
+    border:1px solid var(--paper-line); border-radius:7px; padding:6px 10px; color:var(--ink-light);}
+  .search-box input[type="search"]{border:none; background:transparent; outline:none; font:inherit;
+    font-size:13px; color:var(--ink); width:200px;}
+  .search-box select{border:none; background:transparent; outline:none; font:inherit; font-size:12px;
+    color:var(--ink-light); cursor:pointer; border-left:1px solid var(--paper-line); padding-left:8px;}
+  .filter-chips{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{border:1px solid var(--paper-line); background:var(--paper-2); color:var(--ink-light);
+    border-radius:20px; padding:4px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer;}
+  .chip:hover{border-color:var(--ink-light);}
+  .chip-on{background:var(--ink); border-color:var(--ink); color:var(--paper);}
+  .deleted-toggle{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-light);
+    cursor:pointer; user-select:none;}
+  .notice.subtle{background:transparent; border:1px dashed var(--paper-line); color:var(--ink-light);
+    font-size:12px; margin-top:14px;}
+  .section-label{margin-bottom:10px; font-weight:600; text-transform:uppercase; font-size:11px;
+    letter-spacing:0.5px;}
+  .drawer-label{margin:22px 0 16px 0; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;
+    color:var(--ink-light); font-weight:700;}
+
+  /* ---------- pagination ---------- */
+  .pager{display:flex; align-items:center; justify-content:center; gap:16px; margin-top:18px;}
+  .pager .btn[disabled]{opacity:0.4; cursor:not-allowed;}
+
+  /* ---------- row states ---------- */
+  .row-deleted{opacity:0.55;}
+  .row-deleted .po-num{text-decoration:line-through;}
+  .stamp.deleted-tag{color:var(--red); border-color:var(--red); background:var(--red-bg); margin-left:6px;}
+  .row-pending{background:rgba(216,163,57,0.07);}
+  .role-pill.pending{background:var(--paper-line); color:var(--ink-light);}
+
+  /* ---------- inline admin editing ---------- */
+  .inline-input, .inline-select{font:inherit; font-size:13px; color:var(--ink);
+    background:transparent; border:1px solid transparent; border-radius:5px; padding:5px 7px; width:100%;}
+  .inline-input:hover, .inline-select:hover{border-color:var(--paper-line);}
+  .inline-input:focus, .inline-select:focus{outline:none; border-color:var(--rust); background:var(--paper-2);}
+  .inline-input:disabled{color:var(--ink-light); border-color:transparent;}
+  .inline-select{cursor:pointer;}
+
+  /* ---------- narrow-viewport table handling ----------
+     The prototype assumed a wide desktop and let wide tables push the whole
+     page sideways. Scroll them inside their own panel instead, so the page
+     body never scrolls horizontally and rows stay on one line. */
+  .panel{overflow-x:auto;}
+  .panel table{min-width:720px;}
+  .panel .user-table{min-width:560px;}
+  main{min-width:0; overflow-x:hidden;}

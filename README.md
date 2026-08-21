@@ -114,20 +114,39 @@ The login field accepts either form:
 
 ## Local development
 
+Against the live project:
+
 ```bash
 npm install
 npm run dev
 ```
 
-To run against the local emulators instead of the live project, set
-`VITE_USE_EMULATORS=true` in `.env.local` and start them:
+Against the local emulators, with throwaway accounts for all four roles — no
+Firebase project touched, nothing to set up by hand:
 
 ```bash
 npm run emulators
 ```
 
-Emulator UI is at http://127.0.0.1:4000 — create test users under the Auth tab
-and their profile documents under Firestore, same shape as the bootstrap above.
+then, in a second terminal:
+
+```bash
+npm run seed
+npm run dev:emulator
+```
+
+`npm run seed` creates one account per role plus a few catalog items. It refuses
+to run unless the emulator environment variables point at localhost, so these
+passwords can never reach production.
+
+| Login ID | Password | Role |
+|---|---|---|
+| `admin` | `admin123` | Admin |
+| `operator` | `oper123` | Operator |
+| `purchase` | `pur123` | Purchase Manager |
+| `inward` | `inw123` | Inward Manager |
+
+Emulator UI is at http://127.0.0.1:4000.
 
 ---
 

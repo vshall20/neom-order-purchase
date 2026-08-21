@@ -1,11 +1,5 @@
-import {
-  collection,
-  doc,
-  serverTimestamp,
-  type Firestore,
-  type Transaction,
-  type WriteBatch,
-} from 'firebase/firestore';
+import { collection, doc, serverTimestamp, Transaction } from 'firebase/firestore';
+import type { Firestore, WriteBatch } from 'firebase/firestore';
 import type { AuditAction, AuditTargetType, UserProfile } from '../types';
 
 export interface AuditDraft {
@@ -48,5 +42,9 @@ export function writeAudit(
   draft: AuditDraft,
 ): void {
   const ref = doc(collection(db, 'auditLog'));
-  writer.set(ref, auditBody(actor, draft));
+  const body = auditBody(actor, draft);
+  // Transaction.set and WriteBatch.set have incompatible generic signatures,
+  // so the union has to be narrowed before either can be called.
+  if (writer instanceof Transaction) writer.set(ref, body);
+  else writer.set(ref, body);
 }
