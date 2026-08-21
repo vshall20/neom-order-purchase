@@ -1,0 +1,27 @@
+{
+  "name": "neom-order-purchase",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Purchase order management for Neom Modular Pvt Ltd",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run --project rules\"",
+    "emulators": "firebase emulators:start",
+    "deploy": "npm run build && firebase deploy --only firestore:rules,firestore:indexes,hosting"
+  },
+  "dependencies": {
+    "firebase": "^12.4.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase-tools": "^14.19.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
+  }
+}

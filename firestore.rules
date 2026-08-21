@@ -1,0 +1,243 @@
+rules_version = '2';
+
+/**
+ * Neom Modular — Purchase Order System
+ *
+ * This file IS the authorization boundary. There is no application server, so
+ * anything not forbidden here is permitted to anyone who opens dev tools.
+ * The checks in src/domain/permissions.ts and src/domain/statusMachine.ts are
+ * UI conveniences that mirror these rules; if you change one, change both.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------------- identity helpers ---------------- */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    // get() inside rules is a privileged read and is not itself rule-checked.
+    // Each call is billed as one document read.
+    function profile() {
+      return get(profilePath()).data;
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(profilePath());
+    }
+
+    // Every rule below funnels through this. A profile with active == false
+    // can neither read nor write anything, which is how account removal works
+    // in an app that has no Admin SDK to delete credentials with.
+    function active() {
+      return hasProfile() && profile().active == true;
+    }
+
+    function role() {
+      return profile().role;
+    }
+
+    function isAdmin() {
+      return active() && role() == 'admin';
+    }
+
+    function hasRole(roles) {
+      return active() && role() in roles;
+    }
+
+    /* ---------------- orders ---------------- */
+
+    match /orders/{orderId} {
+      function existing() { return resource.data; }
+      function incoming() { return request.resource.data; }
+
+      // Which fields this write actually changes. Every transition below
+      // whitelists its own set, so poNumber, poSeq, createdAt and createdBy
+      // are immutable simply by never appearing in one.
+      function touches(fields) {
+        return incoming().diff(existing()).affectedKeys().hasOnly(fields);
+      }
+
+      function from() { return existing().status; }
+      function to()   { return incoming().status; }
+
+      allow get, list: if active();
+
+      // Admin creates a full order, either saved as a draft or placed at once.
+      //
+      // Note: rules cannot iterate an array, so `total` cannot be verified
+      // against the sum of `items` here. An admin can therefore write a total
+      // that disagrees with its line items. That is accepted: admins are
+      // trusted to create orders, and every create is recorded in auditLog.
+      function validFullOrderCreate() {
+        return isAdmin()
+          && incoming().status in ['draft', 'pending']
+          && incoming().vendor is string
+          && incoming().vendor.size() > 0
+          && incoming().createdBy.uid == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().deleted == false;
+      }
+
+      // Operator (or admin) submits a material requirement: no vendor, no
+      // pricing. `total == 0` is the aggregate stand-in for "no prices set",
+      // for the same no-iteration reason as above. Prices are overwritten
+      // wholesale when a purchase manager processes the requirement, so a
+      // fabricated price on a requirement can never reach a placed order.
+      function validRequirementCreate() {
+        return hasRole(['admin', 'operator'])
+          && incoming().status == 'requirement'
+          && incoming().vendor == ''
+          && incoming().total == 0
+          && incoming().createdBy.uid == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().deleted == false;
+      }
+
+      allow create: if validFullOrderCreate() || validRequirementCreate();
+
+      // requirement -> pending: purchase manager prices it and names a vendor.
+      function canProcess() {
+        return hasRole(['admin', 'purchase_manager'])
+          && from() == 'requirement' && to() == 'pending'
+          && incoming().vendor.size() > 0
+          && touches(['status', 'vendor', 'vendorLower', 'items', 'total', 'placedAt', 'processedBy']);
+      }
+
+      // draft -> pending: admin places a saved draft.
+      function canPlace() {
+        return isAdmin()
+          && from() == 'draft' && to() == 'pending'
+          && touches(['status', 'placedAt']);
+      }
+
+      // pending|partial -> partial|received: inward manager logs a receipt.
+      // Vendor and total are not in the whitelist, so a receipt cannot
+      // quietly reprice an order.
+      function canReceive() {
+        return hasRole(['admin', 'inward_manager'])
+          && from() in ['pending', 'partial']
+          && to() in ['partial', 'received']
+          && touches(['items', 'status', 'receivedBy']);
+      }
+
+      // received -> complete: purchase manager signs it off.
+      function canComplete() {
+        return hasRole(['admin', 'purchase_manager'])
+          && from() == 'received' && to() == 'complete'
+          && touches(['status', 'completedBy', 'completedAt']);
+      }
+
+      // Soft delete and its undo. Status is untouched, so a deleted order
+      // restores to exactly the stage it was at.
+      function canSoftDelete() {
+        return isAdmin() && touches(['deleted', 'deletedBy', 'deletedAt']);
+      }
+
+      allow update: if canProcess() || canPlace() || canReceive() || canComplete() || canSoftDelete();
+
+      // Purchasing records are never destroyed. Deletion is the `deleted` flag.
+      allow delete: if false;
+    }
+
+    /* ---------------- users ---------------- */
+
+    match /users/{userId} {
+      // Own profile is always readable — it has to be, because the role that
+      // every other rule checks lives in it.
+      allow get: if signedIn() && (request.auth.uid == userId || active());
+      allow list: if isAdmin();
+
+      // First-login self-provisioning. Accounts are created in the Firebase
+      // Auth console, so on first sign-in no profile exists yet. The user
+      // creates their own, but only as an inactive `pending` one — which
+      // grants nothing until an admin assigns a real role.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'pending'
+        && request.resource.data.active == false
+        && request.resource.data.email == request.auth.token.email;
+
+      // Admins manage everyone but themselves. Blocking self-edits is what
+      // stops the last admin from demoting or deactivating themselves and
+      // locking the whole organisation out with no Admin SDK to recover with.
+      allow update: if isAdmin()
+        && request.auth.uid != userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'role', 'active', 'updatedAt'])
+        && request.resource.data.role in
+             ['admin', 'operator', 'purchase_manager', 'inward_manager', 'pending'];
+
+      // Deactivate instead. Removing the credential is a console operation.
+      allow delete: if false;
+    }
+
+    /* ---------------- item catalog ---------------- */
+
+    match /itemCatalog/{itemId} {
+      allow get, list: if active();
+
+      allow create: if hasRole(['admin', 'purchase_manager'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.active == true
+        && request.resource.data.defaultPrice >= 0;
+
+      allow update: if hasRole(['admin', 'purchase_manager'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'nameLower', 'unit', 'defaultPrice', 'active']);
+
+      // Disabled, never deleted, so historical orders still resolve their items.
+      allow delete: if false;
+    }
+
+    /* ---------------- audit log ---------------- */
+
+    match /auditLog/{entryId} {
+      allow get, list: if isAdmin();
+
+      // Append-only, and an entry can only be written in your own name at the
+      // current server time — so entries cannot be forged or back-dated.
+      allow create: if active()
+        && request.resource.data.actor.uid == request.auth.uid
+        && request.resource.data.actor.role == role()
+        && request.resource.data.at == request.time;
+
+      allow update, delete: if false;
+    }
+
+    /* ---------------- PO number counter ---------------- */
+
+    match /counters/{counterId} {
+      allow get: if active();
+      allow list: if isAdmin();
+
+      // Only the roles that can create an order may consume a number.
+      function canConsume() {
+        return hasRole(['admin', 'operator']) && counterId == 'orderSeq';
+      }
+
+      allow create: if canConsume() && request.resource.data.value == 1;
+
+      // Strictly +1. This is what makes duplicate PO numbers impossible: two
+      // simultaneous creates cannot both commit, so the loser retries the
+      // transaction and takes the next number.
+      allow update: if canConsume()
+        && request.resource.data.value == resource.data.value + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['value']);
+
+      allow delete: if false;
+    }
+
+    /* ---------------- default deny ---------------- */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
