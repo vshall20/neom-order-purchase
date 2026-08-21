@@ -34,10 +34,10 @@ export function catalogView(): string {
                 .map(
                   (ci) => `
                 <tr>
-                  <td class="vendor">${escapeHtml(ci.name)}</td>
-                  <td class="muted">${ci.unit ? escapeHtml(ci.unit) : '—'}</td>
-                  <td class="mono">${fmtMoney(ci.defaultPrice)}</td>
-                  <td><span class="stamp ${ci.active ? 'active-y' : 'active-n'}">${ci.active ? 'Active' : 'Disabled'}</span></td>
+                  <td class="vendor" data-label="Item">${escapeHtml(ci.name)}</td>
+                  <td class="muted" data-label="Unit">${ci.unit ? escapeHtml(ci.unit) : '—'}</td>
+                  <td class="mono" data-label="Default price">${fmtMoney(ci.defaultPrice)}</td>
+                  <td data-label="Status"><span class="stamp ${ci.active ? 'active-y' : 'active-n'}">${ci.active ? 'Active' : 'Disabled'}</span></td>
                   <td class="row-actions">
                     <button class="btn btn-sm btn-outline" data-toggle-item="${ci.id}">${ci.active ? 'Disable' : 'Enable'}</button>
                   </td>
@@ -71,11 +71,11 @@ export function usersView(): string {
                   const pending = u.role === 'pending';
                   return `
                 <tr class="${pending ? 'row-pending' : ''}">
-                  <td class="vendor">
+                  <td class="vendor" data-label="Name">
                     <input type="text" class="inline-input" value="${escapeHtml(u.name)}" data-user-name="${u.uid}" ${isSelf ? 'disabled' : ''}/>
                   </td>
-                  <td><span class="cred-tag">${escapeHtml(u.loginId)}</span></td>
-                  <td>
+                  <td data-label="Login ID"><span class="cred-tag">${escapeHtml(u.loginId)}</span></td>
+                  <td data-label="Role">
                     ${
                       isSelf
                         ? `<span class="role-pill ${u.role}">${ROLES[u.role as AppRole]?.short ?? 'Pending'}</span>`
@@ -87,7 +87,7 @@ export function usersView(): string {
                            </select>`
                     }
                   </td>
-                  <td><span class="stamp ${u.active ? 'active-y' : 'active-n'}">${u.active ? 'Active' : 'Disabled'}</span></td>
+                  <td data-label="Status"><span class="stamp ${u.active ? 'active-y' : 'active-n'}">${u.active ? 'Active' : 'Disabled'}</span></td>
                   <td class="row-actions">
                     ${
                       isSelf
@@ -128,10 +128,10 @@ export function activityView(): string {
                 .map(
                   (e) => `
                 <tr>
-                  <td class="muted mono" style="white-space:nowrap;">${fmtDateTime(e.at)}</td>
-                  <td>${escapeHtml(e.actor.name)}<div class="muted" style="font-size:11px;">${escapeHtml(e.actor.role)}</div></td>
-                  <td><span class="cred-tag">${escapeHtml(e.action)}</span></td>
-                  <td>${escapeHtml(e.summary)}</td>
+                  <td class="muted mono" data-label="When" style="white-space:nowrap;">${fmtDateTime(e.at)}</td>
+                  <td data-label="Who">${escapeHtml(e.actor.name)}<div class="muted" style="font-size:11px;">${escapeHtml(e.actor.role)}</div></td>
+                  <td data-label="Action"><span class="cred-tag">${escapeHtml(e.action)}</span></td>
+                  <td data-label="Details">${escapeHtml(e.summary)}</td>
                 </tr>`,
                 )
                 .join('')}</tbody>

@@ -38,7 +38,7 @@ export function receiveDrawer(): string {
           <div class="fill-bar"><div class="fill" style="width:${pct}%;"></div></div>
           <div class="receive-input-row">
             <label>Receive now</label>
-            <input type="number" min="0" max="${remaining}" placeholder="0"
+            <input type="number" inputmode="numeric" min="0" max="${remaining}" placeholder="0" aria-label="Quantity received now"
                    value="${escapeHtml(state.receiveDraft[it.lineId] ?? '')}"
                    data-receive-id="${it.lineId}" ${remaining <= 0 ? 'disabled' : ''}/>
             <span class="muted" style="font-size:12px;">of ${remaining} remaining</span>
@@ -89,7 +89,7 @@ export function processDrawer(): string {
         <div class="process-row">
           <div class="pname">${escapeHtml(it.name)}<div class="muted" style="font-weight:400;">Qty ${it.qty}</div></div>
           <div class="muted mono" style="text-align:center;">×${it.qty}</div>
-          <input type="number" min="0" step="0.01" placeholder="Unit price ₹"
+          <input type="number" inputmode="decimal" min="0" step="0.01" placeholder="Unit price ₹" aria-label="Unit price in rupees"
                  value="${escapeHtml(state.processDraft.prices[it.lineId] ?? '')}" data-proc-price-id="${it.lineId}"/>
           <div class="process-line-total" id="proc-lt-${it.lineId}">
             ${fmtMoney(it.qty * (Number(state.processDraft.prices[it.lineId]) || 0))}</div>

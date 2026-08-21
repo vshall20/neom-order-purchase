@@ -54,7 +54,13 @@ async function run(work: () => Promise<void>, fallbackMessage: string): Promise<
 }
 
 function setView(view: View): void {
-  if (state.view === view) return;
+  // Always close the mobile drawer, even when re-selecting the current view —
+  // otherwise tapping the active item leaves the drawer covering the screen.
+  state.mobileNavOpen = false;
+  if (state.view === view) {
+    render();
+    return;
+  }
   state.view = view;
   state.listError = '';
   state.auditTargetId = null;
@@ -334,6 +340,18 @@ async function onClick(event: MouseEvent): Promise<void> {
   }
 
   if (!profile) return;
+
+  /* mobile navigation drawer */
+  if (el(t, '#mobile-nav-toggle')) {
+    state.mobileNavOpen = !state.mobileNavOpen;
+    render();
+    return;
+  }
+  if (el(t, '#nav-backdrop')) {
+    state.mobileNavOpen = false;
+    render();
+    return;
+  }
 
   /* navigation */
   const nav = el<HTMLElement>(t, '[data-nav]');

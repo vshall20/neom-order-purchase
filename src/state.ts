@@ -73,6 +73,9 @@ export interface AppState {
   /* admin */
   auditTargetId: string | null;
   busy: boolean;
+
+  /** Off-canvas navigation drawer, mobile only. */
+  mobileNavOpen: boolean;
 }
 
 export function emptyCreateForm(): AppState['createForm'] {
@@ -126,6 +129,7 @@ export const state: AppState = {
 
   auditTargetId: null,
   busy: false,
+  mobileNavOpen: false,
 };
 
 /* ---------- subscription bookkeeping ---------- */

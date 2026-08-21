@@ -102,7 +102,7 @@ export function sidebar(): string {
     </button>`;
 
   return `
-  <div class="sidebar">
+  <div class="sidebar ${state.mobileNavOpen ? 'is-open' : ''}">
     <div class="brand">
       <div class="brand-logo">
         <img src="${LOGO}" alt="Neom Modular Pvt Ltd"/>
@@ -128,6 +128,26 @@ export function sidebar(): string {
       </div>
       <button class="signout-btn" id="signout-btn">Sign out</button>
     </div>
+  </div>`;
+}
+
+/**
+ * Top bar shown only on narrow screens, where the sidebar is off-canvas.
+ * Carries the menu toggle and enough branding to orient the user.
+ */
+export function mobileHeader(): string {
+  const p = state.profile;
+  if (!p) return '';
+  return `
+  <div class="mobile-bar">
+    <button class="mobile-menu-btn" id="mobile-nav-toggle" aria-label="Menu" aria-expanded="${state.mobileNavOpen}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+    </button>
+    <img src="${LOGO}" alt=""/>
+    <div class="mobile-title">Neom Modular</div>
+    <span class="role-pill ${p.role}">${ROLES[p.role as AppRole]?.short ?? 'Pending'}</span>
   </div>`;
 }
 

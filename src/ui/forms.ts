@@ -32,8 +32,8 @@ export function createView(): string {
           (it) => `
         <div class="line-item">
           <input type="text" placeholder="Item name" list="item-catalog-options" value="${escapeHtml(it.name)}" data-line-field="name" data-line-id="${it.id}"/>
-          <input type="number" min="0" placeholder="0" value="${escapeHtml(it.qty)}" data-line-field="qty" data-line-id="${it.id}"/>
-          <input type="number" min="0" step="0.01" placeholder="0.00" value="${escapeHtml(it.price)}" data-line-field="price" data-line-id="${it.id}"/>
+          <input type="number" inputmode="numeric" min="0" placeholder="Qty" aria-label="Quantity" value="${escapeHtml(it.qty)}" data-line-field="qty" data-line-id="${it.id}"/>
+          <input type="number" inputmode="decimal" min="0" step="0.01" placeholder="Unit price ₹" aria-label="Unit price in rupees" value="${escapeHtml(it.price)}" data-line-field="price" data-line-id="${it.id}"/>
           <div class="line-total mono" id="lt-${it.id}">${fmtMoney((Number(it.qty) || 0) * (Number(it.price) || 0))}</div>
           <button class="remove-line" data-remove-line="${it.id}" title="Remove line">${icon('trash')}</button>
         </div>`,
@@ -71,7 +71,7 @@ export function requirementFormView(): string {
           (it) => `
         <div class="line-item no-price">
           <input type="text" placeholder="Item name" list="item-catalog-options" value="${escapeHtml(it.name)}" data-req-field="name" data-req-id="${it.id}"/>
-          <input type="number" min="0" placeholder="0" value="${escapeHtml(it.qty)}" data-req-field="qty" data-req-id="${it.id}"/>
+          <input type="number" inputmode="numeric" min="0" placeholder="Qty" aria-label="Quantity" value="${escapeHtml(it.qty)}" data-req-field="qty" data-req-id="${it.id}"/>
           <button class="remove-line" data-remove-req-line="${it.id}" title="Remove line">${icon('trash')}</button>
         </div>`,
         )

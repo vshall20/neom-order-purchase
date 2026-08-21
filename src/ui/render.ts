@@ -1,7 +1,7 @@
 import { canSeeView, defaultViewFor } from '../domain/permissions';
 import type { AppRole, OrderStatus, View } from '../types';
 import { state } from '../state';
-import { gateScreen, loadingScreen, loginScreen, sidebar } from './chrome';
+import { gateScreen, loadingScreen, loginScreen, mobileHeader, sidebar } from './chrome';
 import {
   completeView,
   dashboardView,
@@ -121,9 +121,11 @@ export function render(): void {
   if (!canSeeView(role, state.view)) state.view = defaultViewFor(role);
 
   app.className = 'with-sidebar';
-  app.innerHTML = `${sidebar()}<main>${mainContent()}</main>${
-    state.receivingOrderId ? receiveDrawer() : ''
-  }${state.processingOrderId ? processDrawer() : ''}`;
+  app.innerHTML = `${mobileHeader()}${sidebar()}${
+    state.mobileNavOpen ? '<div class="nav-backdrop" id="nav-backdrop"></div>' : ''
+  }<main>${mainContent()}</main>${state.receivingOrderId ? receiveDrawer() : ''}${
+    state.processingOrderId ? processDrawer() : ''
+  }`;
 
   restoreFocus?.();
 }

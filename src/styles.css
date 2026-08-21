@@ -255,3 +255,104 @@
     border:1px solid var(--paper-line); border-radius:6px; padding:5px 8px;}
   .date-range.is-disabled{opacity:0.45;}
   .date-range.is-disabled input{cursor:not-allowed;}
+
+  /* ================================================================
+     RESPONSIVE
+     The prototype assumed a wide desktop. Two breakpoints:
+       <= 900px  sidebar becomes an off-canvas drawer
+       <= 820px  tables restack as cards, forms and drawers go full width
+     Receiving stock happens on the shop floor, so the phone layout is a
+     real use case rather than a nicety.
+     ================================================================ */
+
+  /* The mobile top bar is hidden on desktop, where the sidebar is enough. */
+  .mobile-bar{display:none;}
+  .nav-backdrop{display:none;}
+
+  @media (max-width: 900px){
+    #app.with-sidebar{display:block;}
+
+    .mobile-bar{display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:40;
+      background:var(--ink); color:var(--paper); padding:10px 14px;}
+    .mobile-bar img{height:26px; width:auto; border-radius:4px;}
+    .mobile-title{font-weight:600; font-size:15px; flex:1;}
+    .mobile-menu-btn{background:transparent; border:1px solid rgba(247,244,236,0.25); color:var(--paper);
+      border-radius:7px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; flex-shrink:0;}
+    .mobile-menu-btn:active{background:rgba(247,244,236,0.12);}
+
+    /* Sidebar slides in from the left instead of holding a column. */
+    .sidebar{position:fixed; top:0; left:0; bottom:0; height:100dvh; width:264px; max-width:82vw;
+      z-index:60; transform:translateX(-100%); transition:transform 200ms ease; overflow-y:auto;}
+    .sidebar.is-open{transform:none; box-shadow:4px 0 24px rgba(0,0,0,0.3);}
+    .nav-backdrop{display:block; position:fixed; inset:0; background:rgba(28,43,51,0.5); z-index:55;}
+
+    main{padding:20px 16px; max-width:none;}
+    .page-header h2{font-size:22px;}
+    .stats{grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-bottom:22px;}
+
+    /* Comfortable touch targets. */
+    .nav-btn{padding:13px 20px;}
+    .btn, .btn-sm{min-height:38px;}
+  }
+
+  @media (max-width: 820px){
+    /* Tables restack as cards. thead is hidden and each cell prints its own
+       label, so nothing has to scroll sideways to be readable. */
+    .panel{overflow-x:visible;}
+    .panel table, .panel .user-table{min-width:0;}
+    .panel thead{display:none;}
+    .panel tbody tr{display:block; padding:12px 14px; border-bottom:1px solid var(--paper-line);}
+    .panel tbody tr:last-child{border-bottom:none;}
+    .panel tbody td{display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:5px 0; border:none; width:auto !important;}
+    .panel tbody td::before{content:attr(data-label); flex-shrink:0; font-size:10.5px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-light);}
+    .panel tbody td:not([data-label]){justify-content:flex-end;}
+    .panel tbody td.row-actions{flex-wrap:wrap; justify-content:flex-end; padding-top:10px; gap:8px;}
+    .panel .progress-cell{flex-direction:column; align-items:stretch; gap:4px;}
+    .panel .progress-cell::before{align-self:flex-start;}
+    .panel tbody tr:hover{background:transparent;}
+
+    /* Inline admin editing needs room once labels take the left half. */
+    .inline-input, .inline-select{width:auto; flex:1; min-width:0; border-color:var(--paper-line);}
+
+    /* Forms stack. */
+    .form-row{flex-direction:column; gap:12px;}
+    .form-row .field{max-width:none !important;}
+    .form-panel{padding:16px 14px;}
+    .form-footer{flex-direction:column; align-items:stretch; gap:12px;}
+    .form-actions{display:flex; gap:8px;}
+    .form-actions .btn{flex:1;}
+
+    /* Line items: label each field instead of relying on a header row. */
+    .col-labels, .col-labels.no-price{display:none;}
+    .line-item, .line-item.no-price{grid-template-columns:1fr auto; gap:8px; align-items:center;
+      border:1px solid var(--paper-line); border-radius:8px; padding:10px; margin-bottom:10px;}
+    .line-item input[data-line-field="name"], .line-item input[data-req-field="name"]{grid-column:1 / -1;}
+    .line-item .line-total{grid-column:1; text-align:left;}
+    .line-item .remove-line{grid-column:2; justify-self:end;}
+
+    /* Drawers take the whole screen; a 520px panel does not fit a phone. */
+    .drawer{width:100%; max-width:100%; padding:20px 16px; height:100dvh;}
+    .process-row{grid-template-columns:1fr auto; gap:8px;}
+    .process-row .pname{grid-column:1 / -1;}
+    .process-row .process-line-total{text-align:right;}
+
+    /* Controls wrap instead of overflowing. */
+    .list-controls{gap:10px;}
+    .search-box{flex:1 1 100%;}
+    .search-box input[type="search"]{width:100%; min-width:0;}
+    .date-range{flex-wrap:wrap;}
+    .date-range input[type="date"]{flex:1; min-width:120px;}
+
+    /* Toasts span the width so Undo is easy to hit. */
+    #toast-host{left:12px; right:12px; bottom:12px;}
+    .toast{min-width:0; max-width:none;}
+  }
+
+  @media (max-width: 900px){
+    /* The mobile top bar already shows the role, so the duplicate in the
+       page header is noise on a narrow screen. */
+    .page-header .role-pill{display:none;}
+  }

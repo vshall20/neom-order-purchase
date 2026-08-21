@@ -108,12 +108,12 @@ export function orderRow(o: Order): string {
   const role = state.profile?.role;
   return `
     <tr class="${o.deleted ? 'row-deleted' : ''}">
-      <td class="po-num">${escapeHtml(o.poNumber)}</td>
-      <td class="vendor">${materialDescription(o)}</td>
-      <td class="muted">${o.items.length} line${o.items.length !== 1 ? 's' : ''}</td>
-      <td class="mono">${fmtMoney(orderTotal(o))}</td>
-      <td><span class="stamp ${o.status}">${statusLabel(o.status)}</span>${o.deleted ? '<span class="stamp deleted-tag">Deleted</span>' : ''}</td>
-      <td class="muted">${fmtDate(o.createdAt)}</td>
+      <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
+      <td class="vendor" data-label="Material">${materialDescription(o)}</td>
+      <td class="muted" data-label="Items">${o.items.length} line${o.items.length !== 1 ? 's' : ''}</td>
+      <td class="mono" data-label="Total">${fmtMoney(orderTotal(o))}</td>
+      <td data-label="Status"><span class="stamp ${o.status}">${statusLabel(o.status)}</span>${o.deleted ? '<span class="stamp deleted-tag">Deleted</span>' : ''}</td>
+      <td class="muted" data-label="Created">${fmtDate(o.createdAt)}</td>
       <td class="row-actions">
         ${o.status === 'draft' && can(role, 'createFullOrder') ? `<button class="btn btn-sm btn-outline" data-place="${o.id}">Place order</button>` : ''}
         ${o.status === 'requirement' && can(role, 'processRequirement') ? `<button class="btn btn-sm btn-blue" data-process="${o.id}">Process</button>` : ''}
@@ -178,11 +178,11 @@ export function requirementsQueueView(): string {
                .map(
                  (o) => `
                <tr class="${o.deleted ? 'row-deleted' : ''}">
-                 <td class="po-num">${escapeHtml(o.poNumber)}</td>
-                 <td>${o.items.map((it) => `${escapeHtml(it.name)} <span class="muted">×${it.qty}</span>`).join('<br/>')}</td>
-                 <td class="muted">${o.note ? escapeHtml(o.note) : '—'}</td>
-                 <td class="muted">${escapeHtml(o.createdBy.name)}</td>
-                 <td class="muted">${fmtDate(o.createdAt)}</td>
+                 <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
+                 <td data-label="Requested items">${o.items.map((it) => `${escapeHtml(it.name)} <span class="muted">×${it.qty}</span>`).join('<br/>')}</td>
+                 <td class="muted" data-label="Note">${o.note ? escapeHtml(o.note) : '—'}</td>
+                 <td class="muted" data-label="Submitted by">${escapeHtml(o.createdBy.name)}</td>
+                 <td class="muted" data-label="Date">${fmtDate(o.createdAt)}</td>
                  <td class="row-actions">
                    ${can(role, 'processRequirement') && !o.deleted ? `<button class="btn btn-sm btn-blue" data-process="${o.id}">Process order</button>` : ''}
                    ${historyButton(o)}${deleteOrRestoreButton(o)}
@@ -212,9 +212,11 @@ export function pendingView(): string {
                .map(
                  (o) => `
                <tr>
-                 <td class="po-num">${escapeHtml(o.poNumber)}</td><td class="vendor">${escapeHtml(o.vendor)}</td>
-                 <td class="muted">${o.items.length} lines</td><td class="mono">${fmtMoney(orderTotal(o))}</td>
-                 <td><span class="stamp draft">Draft</span></td>
+                 <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
+                 <td class="vendor" data-label="Vendor">${escapeHtml(o.vendor)}</td>
+                 <td class="muted" data-label="Items">${o.items.length} lines</td>
+                 <td class="mono" data-label="Total">${fmtMoney(orderTotal(o))}</td>
+                 <td data-label="Status"><span class="stamp draft">Draft</span></td>
                  <td class="row-actions">
                    <button class="btn btn-sm btn-primary" data-place="${o.id}">Place order</button>
                    ${historyButton(o)}${deleteOrRestoreButton(o)}
@@ -235,15 +237,15 @@ export function pendingView(): string {
                  const pct = Math.round(orderReceivedFraction(o) * 100);
                  return `
                <tr class="${o.deleted ? 'row-deleted' : ''}">
-                 <td class="po-num">${escapeHtml(o.poNumber)}</td>
-                 <td class="vendor">${escapeHtml(o.vendor)}</td>
-                 <td class="muted">${fmtDate(o.placedAt)}</td>
-                 <td class="muted">${fmtDate(o.expectedDate)}</td>
-                 <td style="width:140px;">
+                 <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
+                 <td class="vendor" data-label="Vendor">${escapeHtml(o.vendor)}</td>
+                 <td class="muted" data-label="Placed">${fmtDate(o.placedAt)}</td>
+                 <td class="muted" data-label="Expected">${fmtDate(o.expectedDate)}</td>
+                 <td class="progress-cell" data-label="Progress" style="width:140px;">
                    <div class="fill-bar"><div class="fill" style="width:${pct}%;"></div></div>
                    <div class="muted mono" style="font-size:11px;">${pct}% received</div>
                  </td>
-                 <td><span class="stamp ${o.status}">${statusLabel(o.status)}</span></td>
+                 <td data-label="Status"><span class="stamp ${o.status}">${statusLabel(o.status)}</span></td>
                  <td class="row-actions">
                    ${o.status !== 'received' && can(role, 'receiveMaterial') && !o.deleted ? `<button class="btn btn-sm btn-outline" data-receive="${o.id}">Receive</button>` : ''}
                    ${o.status === 'received' && can(role, 'completeOrder') && !o.deleted ? `<button class="btn btn-sm btn-green" data-complete="${o.id}">Complete</button>` : ''}
@@ -272,9 +274,11 @@ export function completeView(): string {
                .map(
                  (o) => `
                <tr class="${o.deleted ? 'row-deleted' : ''}">
-                 <td class="po-num">${escapeHtml(o.poNumber)}</td><td class="vendor">${escapeHtml(o.vendor)}</td>
-                 <td class="mono">${fmtMoney(orderTotal(o))}</td><td class="muted">${fmtDate(o.placedAt)}</td>
-                 <td><span class="stamp ${o.status}">${statusLabel(o.status)}</span></td>
+                 <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
+                 <td class="vendor" data-label="Vendor">${escapeHtml(o.vendor)}</td>
+                 <td class="mono" data-label="Total">${fmtMoney(orderTotal(o))}</td>
+                 <td class="muted" data-label="Placed">${fmtDate(o.placedAt)}</td>
+                 <td data-label="Status"><span class="stamp ${o.status}">${statusLabel(o.status)}</span></td>
                  <td class="row-actions">
                    ${o.status === 'received' && can(role, 'completeOrder') && !o.deleted ? `<button class="btn btn-sm btn-green" data-complete="${o.id}">Mark complete</button>` : ''}
                    ${historyButton(o)}${deleteOrRestoreButton(o)}
