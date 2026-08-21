@@ -49,6 +49,9 @@ export interface AppState {
   filter: OrderFilter;
   searchField: SearchField;
   searchInput: string;
+  /** yyyy-mm-dd from the date inputs; empty means unbounded. */
+  createdFrom: string;
+  createdTo: string;
   /** Cursors for pages already visited; length is the current page index. */
   pageStack: QueryDocumentSnapshot[];
   nextCursor: QueryDocumentSnapshot | null;
@@ -104,6 +107,8 @@ export const state: AppState = {
   filter: { deleted: false },
   searchField: 'poNumber',
   searchInput: '',
+  createdFrom: '',
+  createdTo: '',
   pageStack: [],
   nextCursor: null,
   listError: '',

@@ -53,6 +53,13 @@ export function searchBar(showStatusFilter: boolean): string {
           </div>`
         : ''
     }
+    <div class="date-range ${searching ? 'is-disabled' : ''}">
+      <label>Created</label>
+      <input type="date" id="filter-from" value="${escapeHtml(state.createdFrom)}" ${searching ? 'disabled' : ''} aria-label="Created from"/>
+      <span class="muted">to</span>
+      <input type="date" id="filter-to" value="${escapeHtml(state.createdTo)}" ${searching ? 'disabled' : ''} aria-label="Created to"/>
+      ${state.createdFrom || state.createdTo ? '<button class="btn btn-sm btn-outline" id="clear-dates">Clear</button>' : ''}
+    </div>
     ${
       can(state.profile?.role, 'restoreOrder')
         ? `<label class="deleted-toggle">

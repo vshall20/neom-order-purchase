@@ -343,6 +343,14 @@ async function onClick(event: MouseEvent): Promise<void> {
   }
 
   /* search and filters */
+  if (el(t, '#clear-dates')) {
+    state.createdFrom = '';
+    state.createdTo = '';
+    resetPaging();
+    syncOrderList();
+    render();
+    return;
+  }
   if (el(t, '#clear-search')) {
     state.searchInput = '';
     resetPaging();
@@ -603,6 +611,18 @@ async function onChange(event: Event): Promise<void> {
 
   if (target instanceof HTMLSelectElement && target.id === 'search-field') {
     state.searchField = target.value as typeof state.searchField;
+    resetPaging();
+    syncOrderList();
+    render();
+    return;
+  }
+
+  if (
+    target instanceof HTMLInputElement &&
+    (target.id === 'filter-from' || target.id === 'filter-to')
+  ) {
+    if (target.id === 'filter-from') state.createdFrom = target.value;
+    else state.createdTo = target.value;
     resetPaging();
     syncOrderList();
     render();

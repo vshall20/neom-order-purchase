@@ -24,10 +24,18 @@ export function currentFilter(): OrderFilter {
     : statusesForView(state.view, role);
   const term = state.searchInput.trim();
 
+  // A prefix search must order by the field it searches, and Firestore only
+  // allows range constraints on the field it orders by — so the date range
+  // cannot apply at the same time. The UI disables the pickers while searching.
+  const from = !term && state.createdFrom ? new Date(state.createdFrom + 'T00:00:00') : null;
+  const to = !term && state.createdTo ? new Date(state.createdTo + 'T23:59:59.999') : null;
+
   return {
     deleted: state.filter.deleted ?? false,
     ...(statuses ? { statuses } : {}),
     ...(term ? { search: { field: state.searchField, value: term } } : {}),
+    ...(from ? { createdFrom: from } : {}),
+    ...(to ? { createdTo: to } : {}),
   };
 }
 
