@@ -25,7 +25,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 /** Domain appended to a bare login ID at sign-in. See auth/loginId.ts. */
-export const LOGIN_DOMAIN = import.meta.env.VITE_LOGIN_DOMAIN || 'neommodular.local';
+export const LOGIN_DOMAIN = import.meta.env.VITE_LOGIN_DOMAIN || 'neommodular.com';
 
 if (import.meta.env.VITE_USE_EMULATORS === 'true') {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

@@ -81,7 +81,7 @@ Do it once, by hand:
 
 1. **Firebase console → Authentication → Users → Add user.** Enter an email and
    password. If the person has no real email, use the synthetic form
-   `admin@neommodular.local` — matching `VITE_LOGIN_DOMAIN` in `.env.local`.
+   `admin@neommodular.com` — matching `VITE_LOGIN_DOMAIN` in `.env.local`.
 2. Copy the **User UID** from that row.
 3. **Firebase console → Firestore → Start collection `users`**, document ID = the
    UID you copied, with these fields:
@@ -115,8 +115,17 @@ every rule requires `active == true`.
 
 The login field accepts either form:
 
-- `ananya.r` → the app appends `VITE_LOGIN_DOMAIN` → `ananya.r@neommodular.local`
-- `ananya@neommodular.com` → contains `@`, used as-is
+- `ananya.r` → the app appends `VITE_LOGIN_DOMAIN` → `ananya.r@neommodular.com`
+- `ananya@somewhere-real.com` → contains `@`, used as-is
+
+**`neommodular.com` accepts no email.** It publishes a null MX record
+(`dig +short MX neommodular.com` returns `0 .`, [RFC 7505](https://www.rfc-editor.org/rfc/rfc7505)),
+so addresses on it are login identifiers only — Firebase's password-reset email
+cannot reach them. Resets for those accounts go through an admin in the console.
+
+Anyone who has a real, deliverable email address can be created with it instead
+and gets Firebase's self-service reset for free. The two styles mix freely; the
+login field handles both.
 
 ---
 

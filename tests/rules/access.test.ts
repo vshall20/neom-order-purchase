@@ -44,7 +44,7 @@ describe('user profiles', () => {
       setDoc(doc(dbFor(env, 'uid-fresh'), 'users/uid-fresh'), {
         name: 'Fresh',
         loginId: 'uid-fresh',
-        email: 'uid-fresh@neommodular.local',
+        email: 'uid-fresh@neommodular.com',
         role: 'pending',
         active: false,
         createdAt: serverTimestamp(),
@@ -58,7 +58,7 @@ describe('user profiles', () => {
       setDoc(doc(dbFor(env, 'uid-fresh'), 'users/uid-fresh'), {
         name: 'Fresh',
         loginId: 'uid-fresh',
-        email: 'uid-fresh@neommodular.local',
+        email: 'uid-fresh@neommodular.com',
         role: 'admin',
         active: true,
         createdAt: serverTimestamp(),
@@ -72,7 +72,7 @@ describe('user profiles', () => {
       setDoc(doc(dbFor(env, 'uid-fresh'), 'users/uid-fresh'), {
         name: 'Fresh',
         loginId: 'uid-fresh',
-        email: 'uid-fresh@neommodular.local',
+        email: 'uid-fresh@neommodular.com',
         role: 'pending',
         active: true,
         createdAt: serverTimestamp(),
@@ -86,7 +86,7 @@ describe('user profiles', () => {
       setDoc(doc(dbFor(env, UID.admin), 'users/uid-someone-else'), {
         name: 'Someone',
         loginId: 'someone',
-        email: 'someone@neommodular.local',
+        email: 'someone@neommodular.com',
         role: 'pending',
         active: false,
         createdAt: serverTimestamp(),

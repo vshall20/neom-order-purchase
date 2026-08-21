@@ -41,7 +41,7 @@ export async function seedProfiles(env: RulesTestEnvironment): Promise<void> {
       await setDoc(doc(db, 'users', uid), {
         name: uid,
         loginId: uid,
-        email: `${uid}@neommodular.local`,
+        email: `${uid}@neommodular.com`,
         role,
         active,
         createdAt: serverTimestamp(),
@@ -65,7 +65,7 @@ export async function seedDoc(
 
 export function dbFor(env: RulesTestEnvironment, uid: string | null): Firestore {
   const ctx = uid
-    ? env.authenticatedContext(uid, { email: `${uid}@neommodular.local` })
+    ? env.authenticatedContext(uid, { email: `${uid}@neommodular.com` })
     : env.unauthenticatedContext();
   return ctx.firestore() as unknown as Firestore;
 }

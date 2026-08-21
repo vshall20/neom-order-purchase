@@ -2,7 +2,7 @@
  * Accounts are created by an admin in the Firebase Auth console, which keys
  * every account to an email address. Not every worker at Neom Modular has one,
  * so accounts for those users are created with a synthetic address
- * (`ananya.r@neommodular.local`) and they sign in with just the login ID.
+ * (`ananya.r@neommodular.com`) and they sign in with just the login ID.
  *
  * Rule: anything containing "@" is treated as a real email and used as-is;
  * anything else gets the configured domain appended.

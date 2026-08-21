@@ -21,7 +21,7 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 
 const PROJECT_ID = process.env.SEED_PROJECT_ID || 'neom-order-purchase';
-const LOGIN_DOMAIN = process.env.SEED_LOGIN_DOMAIN || 'neommodular.local';
+const LOGIN_DOMAIN = process.env.SEED_LOGIN_DOMAIN || 'neommodular.com';
 const AUTH_HOST = '127.0.0.1:9099';
 const FIRESTORE_HOST = '127.0.0.1:8080';
 

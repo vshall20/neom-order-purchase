@@ -123,26 +123,26 @@ describe('statusLabel', () => {
 
 describe('login id mapping', () => {
   it('appends the configured domain to a bare login id', () => {
-    expect(toSignInEmail('ananya.r', 'neommodular.local')).toBe('ananya.r@neommodular.local');
+    expect(toSignInEmail('ananya.r', 'neommodular.com')).toBe('ananya.r@neommodular.com');
   });
 
   it('leaves a real email address alone', () => {
-    expect(toSignInEmail('Ananya@Neom.com', 'neommodular.local')).toBe('ananya@neom.com');
+    expect(toSignInEmail('Ananya@Neom.com', 'neommodular.com')).toBe('ananya@neom.com');
   });
 
   it('trims and lowercases what the user typed', () => {
-    expect(toSignInEmail('  ADMIN  ', 'neommodular.local')).toBe('admin@neommodular.local');
+    expect(toSignInEmail('  ADMIN  ', 'neommodular.com')).toBe('admin@neommodular.com');
   });
 
   it('returns empty for empty input rather than a bare domain', () => {
-    expect(toSignInEmail('   ', 'neommodular.local')).toBe('');
+    expect(toSignInEmail('   ', 'neommodular.com')).toBe('');
   });
 
   it('round-trips back to the short login id for display', () => {
-    expect(toDisplayLoginId('ananya.r@neommodular.local', 'neommodular.local')).toBe('ananya.r');
+    expect(toDisplayLoginId('ananya.r@neommodular.com', 'neommodular.com')).toBe('ananya.r');
   });
 
   it('keeps a real address whole for display', () => {
-    expect(toDisplayLoginId('ananya@neom.com', 'neommodular.local')).toBe('ananya@neom.com');
+    expect(toDisplayLoginId('ananya@neom.com', 'neommodular.com')).toBe('ananya@neom.com');
   });
 });
