@@ -43,15 +43,30 @@ that touches permissions.
 
 ## One-time Firebase setup
 
-Steps 1, 3, 4, 5 and 6 are **already done** for `neom-order-purchase`. Step 2 is
-the remaining manual one. Follow the whole list only when standing up a fresh
-project (a staging environment, say).
+All of these are **already done** for `neom-order-purchase`: the database lives
+in `asia-south1`, rules and all 10 composite indexes are deployed, and
+Email/Password sign-in is enabled. Follow the list only when standing up a
+fresh project (a staging environment, say).
 
 1. **Create the project** in the [Firebase console](https://console.firebase.google.com).
 2. **Enable Authentication → Sign-in method → Email/Password.** Firebase Auth is
    not initialised until you do this; before it, every sign-in fails with
    `CONFIGURATION_NOT_FOUND`.
-3. **Create a Firestore database** (`firebase deploy` creates it on first run).
+3. **Create the Firestore database explicitly, choosing its location:**
+
+   ```bash
+   npx firebase firestore:databases:create "(default)" --location asia-south1
+   ```
+
+   Do not rely on `firebase deploy` to create it. It attempts to, but reports
+   `deployed indexes ... successfully` even when the database was never created
+   — and the retry is then rate-limited for a couple of minutes. Verify with
+   `npx firebase firestore:databases:list` before trusting a deploy.
+
+   **The location is permanent.** It cannot be changed afterwards; moving means
+   exporting, deleting the database, and re-importing. `asia-south1` (Mumbai)
+   is used here: the team is in India, and a US multi-region would add roughly
+   250-350ms to every read and write.
 4. **Register a Web app** and copy its config into `.env.local`:
 
    ```bash
