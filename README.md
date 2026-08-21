@@ -4,6 +4,9 @@ Internal purchase-order tracking for Neom Modular Pvt Ltd. Static front end on
 Firebase Hosting, Cloud Firestore for data, Firebase Auth for sign-in, and
 Firestore Security Rules as the authorization boundary.
 
+**Live:** https://neom-order-purchase.web.app
+**Console:** https://console.firebase.google.com/project/neom-order-purchase
+
 There is no application server. **Every authorization decision lives in
 [`firestore.rules`](firestore.rules)** — read that file before changing anything
 that touches permissions.
@@ -40,10 +43,15 @@ that touches permissions.
 
 ## One-time Firebase setup
 
+Steps 1, 3, 4, 5 and 6 are **already done** for `neom-order-purchase`. Step 2 is
+the remaining manual one. Follow the whole list only when standing up a fresh
+project (a staging environment, say).
+
 1. **Create the project** in the [Firebase console](https://console.firebase.google.com).
-2. **Enable Authentication → Sign-in method → Email/Password.**
-3. **Create a Firestore database** (production mode; the rules in this repo
-   replace the defaults on first deploy).
+2. **Enable Authentication → Sign-in method → Email/Password.** Firebase Auth is
+   not initialised until you do this; before it, every sign-in fails with
+   `CONFIGURATION_NOT_FOUND`.
+3. **Create a Firestore database** (`firebase deploy` creates it on first run).
 4. **Register a Web app** and copy its config into `.env.local`:
 
    ```bash
