@@ -97,6 +97,17 @@ export function pager(): string {
   </div>`;
 }
 
+/** Each line item as "name ×qty unit", one per row. */
+function itemLines(o: Order): string {
+  if (o.items.length === 0) return '<span class="muted">No items</span>';
+  return o.items
+    .map(
+      (it) =>
+        `<div class="item-line">${escapeHtml(it.name)} <span class="muted">×${escapeHtml(qtyWithUnit(it))}</span></div>`,
+    )
+    .join('');
+}
+
 function deleteOrRestoreButton(o: Order): string {
   const role = state.profile?.role;
   if (o.deleted) {
@@ -242,14 +253,14 @@ export function pendingView(): string {
       ${
         active.length === 0
           ? emptyState('No active orders', 'Placed orders awaiting receipt will show up here.')
-          : `<table><thead><tr><th>PO number</th><th>Vendor</th><th>Placed</th><th>Expected</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+          : `<table><thead><tr><th>PO number</th><th>Item description &amp; qty</th><th>Placed</th><th>Expected</th><th>Progress</th><th>Status</th><th></th></tr></thead>
              <tbody>${active
                .map((o) => {
                  const pct = Math.round(orderReceivedFraction(o) * 100);
                  return `
                <tr class="${o.deleted ? 'row-deleted' : ''}">
                  <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
-                 <td class="vendor" data-label="Vendor">${escapeHtml(o.vendor)}</td>
+                 <td class="item-cell" data-label="Items">${itemLines(o)}</td>
                  <td class="muted" data-label="Placed">${fmtDate(o.placedAt)}</td>
                  <td class="muted" data-label="Expected">${fmtDate(o.expectedDate)}</td>
                  <td class="progress-cell" data-label="Progress" style="width:140px;">
