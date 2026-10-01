@@ -123,15 +123,15 @@
   .field input:focus, .field select:focus{outline:none; border-color:var(--rust); background:var(--paper-2);}
   .items-head{display:flex; align-items:center; justify-content:space-between; margin:24px 0 12px 0; padding-top:20px; border-top:1px solid var(--paper-line);}
   .items-head h3{font-size:14px; margin:0; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-light); font-weight:700;}
-  .line-item{display:grid; grid-template-columns:1fr 90px 120px 120px 36px; gap:10px; align-items:center; margin-bottom:8px;}
-  .line-item.no-price{grid-template-columns:1fr 110px 36px;}
+  .line-item{display:grid; grid-template-columns:minmax(150px,1fr) 70px 76px 104px 98px 32px; gap:10px; align-items:center; margin-bottom:8px;}
+  .line-item.no-price{grid-template-columns:minmax(150px,1fr) 90px 90px 32px;}
   .line-item input{font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; padding:9px 10px; border:1px solid var(--paper-line); border-radius:6px; background:var(--paper); width:100%;}
   .line-item input:focus{outline:none; border-color:var(--rust);}
   .line-total{font-family:'IBM Plex Mono', monospace; font-size:13px; text-align:right; padding-right:4px; color:var(--ink-light);}
   .remove-line{background:none; border:none; color:var(--ink-light); cursor:pointer; width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:16px;}
   .remove-line:hover{background:var(--red-bg); color:var(--red);}
-  .col-labels{display:grid; grid-template-columns:1fr 90px 120px 120px 36px; gap:10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-light); font-weight:700; padding:0 0 6px 0;}
-  .col-labels.no-price{grid-template-columns:1fr 110px 36px;}
+  .col-labels{display:grid; grid-template-columns:minmax(150px,1fr) 70px 76px 104px 98px 32px; gap:10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-light); font-weight:700; padding:0 0 6px 0;}
+  .col-labels.no-price{grid-template-columns:minmax(150px,1fr) 90px 90px 32px;}
   .add-line-btn{margin-top:10px; background:none; border:1px dashed var(--paper-line); color:var(--ink-light); padding:9px 14px; border-radius:6px; font-size:13px; cursor:pointer; width:100%; font-family:inherit; font-weight:600;}
   .add-line-btn:hover{border-color:var(--rust); color:var(--rust); background:#FBEEE6;}
   .form-footer{display:flex; align-items:center; justify-content:space-between; margin-top:26px; padding-top:20px; border-top:1px solid var(--paper-line);}
@@ -369,4 +369,15 @@
     .panel tbody td.item-cell{flex-direction:column; align-items:flex-end; gap:2px;}
     .panel tbody td.item-cell::before{align-self:flex-start; margin-bottom:2px;}
     .item-cell .item-line{text-align:right;}
+  }
+
+  /* A unit box on a line whose item is not in the catalog yet. Highlighted
+     because leaving it blank files the item with no unit — which is what it
+     used to do silently. */
+  .line-item input.needs-unit{border-color:var(--amber); background:var(--amber-bg);}
+  .line-item input.needs-unit:focus{border-color:var(--rust); background:var(--paper);}
+
+  @media (max-width: 820px){
+    /* Stacked line: name full width, then qty / unit / price share a row. */
+    .line-item input[data-line-field="unit"], .line-item input[data-req-field="unit"]{grid-column:auto;}
   }

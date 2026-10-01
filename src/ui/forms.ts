@@ -1,7 +1,19 @@
 import { escapeHtml, fmtMoney } from '../domain/format';
+import { findCatalogItem } from '../data/catalog';
 import { state } from '../state';
 import { pageHeader } from './chrome';
 import { icon } from './icons';
+
+/** True once a name has been typed that is not in the catalog yet. */
+function isNewItem(name: string): boolean {
+  return name.trim() !== '' && !findCatalogItem(state.catalog, name);
+}
+
+function unitHint(name: string): string {
+  return isNewItem(name)
+    ? 'New item — enter a unit so it is filed in the catalog correctly'
+    : 'Filled in from the item catalog';
+}
 
 /** Datalist of active catalog items, shared by both item pickers. */
 function catalogDatalist(): string {
@@ -26,13 +38,14 @@ export function createView(): string {
           <input type="date" id="f-expected" value="${escapeHtml(f.expected)}"/></div>
       </div>
       <div class="items-head"><h3>Line items</h3></div>
-      <div class="col-labels"><div>Item description</div><div>Qty</div><div>Unit price (₹)</div><div>Line total</div><div></div></div>
+      <div class="col-labels"><div>Item description</div><div>Qty</div><div>Unit</div><div>Unit price (₹)</div><div>Line total</div><div></div></div>
       ${f.items
         .map(
           (it) => `
         <div class="line-item">
           <input type="text" placeholder="Item name" list="item-catalog-options" value="${escapeHtml(it.name)}" data-line-field="name" data-line-id="${it.id}"/>
           <input type="number" inputmode="numeric" min="0" placeholder="Qty" aria-label="Quantity" value="${escapeHtml(it.qty)}" data-line-field="qty" data-line-id="${it.id}"/>
+          <input type="text" placeholder="pcs / kg" aria-label="Unit of measure" title="${unitHint(it.name)}" value="${escapeHtml(it.unit)}" data-line-field="unit" data-line-id="${it.id}" class="${isNewItem(it.name) ? 'needs-unit' : ''}"/>
           <input type="number" inputmode="decimal" min="0" step="0.01" placeholder="Unit price ₹" aria-label="Unit price in rupees" value="${escapeHtml(it.price)}" data-line-field="price" data-line-id="${it.id}"/>
           <div class="line-total mono" id="lt-${it.id}">${fmtMoney((Number(it.qty) || 0) * (Number(it.price) || 0))}</div>
           <button class="remove-line" data-remove-line="${it.id}" title="Remove line">${icon('trash')}</button>
@@ -65,13 +78,14 @@ export function requirementFormView(): string {
           <input type="text" id="req-note" placeholder="e.g. Needed for Line 2 production" value="${escapeHtml(f.note)}"/></div>
       </div>
       <div class="items-head"><h3>Materials needed</h3></div>
-      <div class="col-labels no-price"><div>Item description</div><div>Quantity</div><div></div></div>
+      <div class="col-labels no-price"><div>Item description</div><div>Quantity</div><div>Unit</div><div></div></div>
       ${f.items
         .map(
           (it) => `
         <div class="line-item no-price">
           <input type="text" placeholder="Item name" list="item-catalog-options" value="${escapeHtml(it.name)}" data-req-field="name" data-req-id="${it.id}"/>
           <input type="number" inputmode="numeric" min="0" placeholder="Qty" aria-label="Quantity" value="${escapeHtml(it.qty)}" data-req-field="qty" data-req-id="${it.id}"/>
+          <input type="text" placeholder="pcs / kg" aria-label="Unit of measure" title="${unitHint(it.name)}" value="${escapeHtml(it.unit)}" data-req-field="unit" data-req-id="${it.id}" class="${isNewItem(it.name) ? 'needs-unit' : ''}"/>
           <button class="remove-line" data-remove-req-line="${it.id}" title="Remove line">${icon('trash')}</button>
         </div>`,
         )

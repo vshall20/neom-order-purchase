@@ -103,6 +103,54 @@ function updateProcessTotals(): void {
   if (totalCell) totalCell.textContent = fmtMoney(total);
 }
 
+/**
+ * Reconcile a line's unit with the catalog after its name changed.
+ *
+ * A catalog match dictates the unit. Moving to a name that is not in the
+ * catalog clears a unit that came from the catalog — otherwise the previous
+ * item's unit silently rides along onto a different material — but keeps one
+ * the user typed themselves.
+ */
+function applyCatalogUnit(
+  line: { name: string; unit: string; unitFromCatalog: boolean },
+  typedName: string,
+): void {
+  const match = findCatalogItem(state.catalog, typedName);
+  if (match) {
+    line.unit = match.unit;
+    line.unitFromCatalog = true;
+  } else if (line.unitFromCatalog) {
+    line.unit = '';
+    line.unitFromCatalog = false;
+  }
+}
+
+/**
+ * Push a line's unit into the DOM without a re-render, and flag it when the
+ * item is new. Re-rendering mid-keystroke would be the obvious alternative,
+ * but it fights the user's cursor on every character typed.
+ */
+function syncUnitInput(
+  line: { id: string; name: string; unit: string; unitFromCatalog: boolean },
+  kind: 'line' | 'req',
+): void {
+  const selector =
+    kind === 'line'
+      ? `[data-line-field="unit"][data-line-id="${CSS.escape(line.id)}"]`
+      : `[data-req-field="unit"][data-req-id="${CSS.escape(line.id)}"]`;
+  const input = document.querySelector<HTMLInputElement>(selector);
+  if (!input) return;
+  input.value = line.unit;
+  input.classList.toggle('needs-unit', line.name.trim() !== '' && !line.unitFromCatalog);
+}
+
+/** Named lines that were left without a unit. */
+function linesMissingUnit(
+  lines: readonly { name: string; unit: string }[],
+): string[] {
+  return lines.filter((it) => it.name.trim() !== '' && it.unit.trim() === '').map((it) => it.name.trim());
+}
+
 /** Line items ready for Firestore: named lines only, numbers coerced. */
 function toOrderItems(lines: readonly FormLine[]): OrderItem[] {
   return lines
@@ -133,11 +181,13 @@ function toRequirementItems(lines: readonly RequirementLine[]): OrderItem[] {
 /** Tell the user when ordering an item also filed it in the catalog. */
 function reportNewCatalogItems(added: readonly string[]): void {
   if (added.length === 0) return;
-  const label =
+  // The unit and price are captured on the line now, so the entry arrives
+  // complete and there is nothing for the user to go and fix.
+  toast(
     added.length === 1
       ? `"${added[0]}" added to the item catalog.`
-      : `${added.length} new items added to the item catalog.`;
-  toast(`${label} Set a unit for it on the Item catalog screen.`);
+      : `${added.length} new items added to the item catalog.`,
+  );
 }
 
 async function submitCreateOrder(placeImmediately: boolean): Promise<void> {
@@ -146,9 +196,14 @@ async function submitCreateOrder(placeImmediately: boolean): Promise<void> {
   const f = state.createForm;
   const items = toOrderItems(f.items);
 
+  const missingUnit = linesMissingUnit(f.items);
+
   f.error = '';
   if (!f.vendor.trim()) f.error = 'Enter a vendor name.';
   else if (items.length === 0) f.error = 'Add at least one line item.';
+  else if (missingUnit.length > 0) {
+    f.error = `Enter a unit (pcs, kg, box…) for ${missingUnit.join(', ')}. New items need one so they are filed in the catalog correctly.`;
+  }
   if (f.error) {
     render();
     return;
@@ -176,7 +231,13 @@ async function submitRequirementForm(): Promise<void> {
   const f = state.reqForm;
   const items = toRequirementItems(f.items);
 
-  f.error = items.length === 0 ? 'Add at least one material.' : '';
+  const missingUnit = linesMissingUnit(f.items);
+
+  f.error = '';
+  if (items.length === 0) f.error = 'Add at least one material.';
+  else if (missingUnit.length > 0) {
+    f.error = `Enter a unit (pcs, kg, box…) for ${missingUnit.join(', ')}. New items need one so they are filed in the catalog correctly.`;
+  }
   if (f.error) {
     render();
     return;
@@ -469,7 +530,7 @@ async function onClick(event: MouseEvent): Promise<void> {
 
   /* create-order form */
   if (el(t, '#add-line-btn')) {
-    state.createForm.items.push({ id: lineId(), name: '', qty: '', price: '', unit: '' });
+    state.createForm.items.push({ id: lineId(), name: '', qty: '', price: '', unit: '', unitFromCatalog: false });
     render();
     return;
   }
@@ -487,7 +548,7 @@ async function onClick(event: MouseEvent): Promise<void> {
 
   /* requirement form */
   if (el(t, '#add-req-line-btn')) {
-    state.reqForm.items.push({ id: lineId(), name: '', qty: '', unit: '' });
+    state.reqForm.items.push({ id: lineId(), name: '', qty: '', unit: '', unitFromCatalog: false });
     render();
     return;
   }
@@ -608,9 +669,8 @@ function onInput(event: Event): void {
     if (ds.lineField === 'name') {
       line.name = value;
       const match = findCatalogItem(state.catalog, value);
-      // The unit is descriptive, not something the user typed here, so it
-      // always tracks the matched catalog item and clears when there is none.
-      line.unit = match?.unit ?? '';
+      applyCatalogUnit(line, value);
+      syncUnitInput(line, 'line');
       // Pre-fill the price from the catalog, but never overwrite a typed one.
       if (match && (!line.price || Number(line.price) === 0)) {
         line.price = String(match.defaultPrice);
@@ -621,6 +681,10 @@ function onInput(event: Event): void {
       }
     } else if (ds.lineField === 'qty') line.qty = value;
     else if (ds.lineField === 'price') line.price = value;
+    else if (ds.lineField === 'unit') {
+      line.unit = value;
+      line.unitFromCatalog = false;
+    }
     updateCreateTotals();
     return;
   }
@@ -630,8 +694,13 @@ function onInput(event: Event): void {
     if (!line) return;
     if (ds.reqField === 'name') {
       line.name = value;
-      line.unit = findCatalogItem(state.catalog, value)?.unit ?? '';
+      applyCatalogUnit(line, value);
+      syncUnitInput(line, 'req');
     } else if (ds.reqField === 'qty') line.qty = value;
+    else if (ds.reqField === 'unit') {
+      line.unit = value;
+      line.unitFromCatalog = false;
+    }
     return;
   }
 

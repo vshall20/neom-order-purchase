@@ -18,6 +18,12 @@ export interface FormLine {
   price: string;
   /** Filled in from the catalog when the item name matches one. */
   unit: string;
+  /**
+   * Whether `unit` came from the catalog rather than being typed. Lets the
+   * unit be cleared when the name changes to something not in the catalog,
+   * without discarding a unit the user typed themselves.
+   */
+  unitFromCatalog: boolean;
 }
 
 export interface RequirementLine {
@@ -25,6 +31,7 @@ export interface RequirementLine {
   name: string;
   qty: string;
   unit: string;
+  unitFromCatalog: boolean;
 }
 
 export type Phase = 'loading' | 'signed-out' | 'pending-approval' | 'ready';
@@ -85,13 +92,13 @@ export function emptyCreateForm(): AppState['createForm'] {
   return {
     vendor: '',
     expected: '',
-    items: [{ id: lineId(), name: '', qty: '', price: '', unit: '' }],
+    items: [{ id: lineId(), name: '', qty: '', price: '', unit: '', unitFromCatalog: false }],
     error: '',
   };
 }
 
 export function emptyReqForm(): AppState['reqForm'] {
-  return { note: '', items: [{ id: lineId(), name: '', qty: '', unit: '' }], error: '' };
+  return { note: '', items: [{ id: lineId(), name: '', qty: '', unit: '', unitFromCatalog: false }], error: '' };
 }
 
 export const state: AppState = {
