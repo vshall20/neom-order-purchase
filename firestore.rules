@@ -182,7 +182,11 @@ service cloud.firestore {
     match /itemCatalog/{itemId} {
       allow get, list: if active();
 
-      allow create: if hasRole(['admin', 'purchase_manager'])
+      // Operators can add items too, because naming a new material on a
+      // requirement files it in the catalog so nobody retypes it next time.
+      // They may only ADD — the update rule below still excludes them, so an
+      // operator cannot rename, reprice or disable an existing item.
+      allow create: if hasRole(['admin', 'purchase_manager', 'operator'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.active == true

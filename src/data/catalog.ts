@@ -28,6 +28,44 @@ export function findCatalogItem(items: readonly CatalogItem[], name: string): Ca
   return items.find((ci) => ci.active && ci.nameLower === n) ?? null;
 }
 
+/**
+ * File any item names that are not in the catalog yet, so the next person can
+ * pick them instead of retyping.
+ *
+ * Deliberately best-effort: it runs after the order has already committed, and
+ * a failure here must never surface as "the order failed". Items created this
+ * way carry no unit — units only come from the catalog, so there is nothing to
+ * copy for an item that was not in it. Someone sets the unit once on the
+ * catalog screen and it then shows everywhere.
+ */
+export async function ensureCatalogEntries(
+  user: UserProfile,
+  known: readonly CatalogItem[],
+  items: readonly { name: string; unit?: string; price?: number }[],
+): Promise<string[]> {
+  const existing = new Set(known.map((ci) => ci.nameLower));
+  const added: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of items) {
+    const name = item.name.trim();
+    const key = name.toLowerCase();
+    if (!name || existing.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    try {
+      await addCatalogItem(user, {
+        name,
+        unit: item.unit ?? '',
+        defaultPrice: Number(item.price) || 0,
+      });
+      added.push(name);
+    } catch {
+      // A denied or failed catalog write is not worth failing the order over.
+    }
+  }
+  return added;
+}
+
 export async function addCatalogItem(
   user: UserProfile,
   input: { name: string; unit: string; defaultPrice: number },

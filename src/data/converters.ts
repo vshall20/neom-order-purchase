@@ -36,6 +36,7 @@ function orderItem(v: unknown): OrderItem {
     lineId: str(o.lineId),
     name: str(o.name),
     qty: num(o.qty),
+    unit: str(o.unit),
     price: num(o.price),
     received: num(o.received),
   };

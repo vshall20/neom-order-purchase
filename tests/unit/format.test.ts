@@ -7,7 +7,9 @@ import {
   orderReceivedFraction,
   orderTotal,
   poNumberFor,
+  qtyWithUnit,
   statusLabel,
+  totalQty,
 } from '../../src/domain/format';
 import { toDisplayLoginId, toSignInEmail } from '../../src/auth/loginId';
 
@@ -51,8 +53,8 @@ describe('orderTotal', () => {
     expect(
       orderTotal({
         items: [
-          { lineId: 'a', name: 'x', qty: 2, price: 50, received: 0 },
-          { lineId: 'b', name: 'y', qty: 3, price: 10, received: 0 },
+          { lineId: 'a', name: 'x', qty: 2, unit: 'pcs', price: 50, received: 0 },
+          { lineId: 'b', name: 'y', qty: 3, unit: 'pcs', price: 10, received: 0 },
         ],
       }),
     ).toBe(130);
@@ -68,8 +70,8 @@ describe('orderReceivedFraction', () => {
     expect(
       orderReceivedFraction({
         items: [
-          { lineId: 'a', name: 'x', qty: 4, price: 0, received: 2 },
-          { lineId: 'b', name: 'y', qty: 6, price: 0, received: 3 },
+          { lineId: 'a', name: 'x', qty: 4, unit: 'kg', price: 0, received: 2 },
+          { lineId: 'b', name: 'y', qty: 6, unit: 'kg', price: 0, received: 3 },
         ],
       }),
     ).toBe(0.5);
@@ -93,7 +95,7 @@ describe('escapeHtml', () => {
 });
 
 describe('materialDescription', () => {
-  const item = (name: string) => ({ lineId: name, name, qty: 1, price: 0, received: 0 });
+  const item = (name: string) => ({ lineId: name, name, qty: 1, unit: '', price: 0, received: 0 });
 
   it('lists the first two names and counts the rest', () => {
     const html = materialDescription({ items: ['Bolt', 'Nut', 'Washer', 'Screw'].map(item) });
@@ -144,5 +146,40 @@ describe('login id mapping', () => {
 
   it('keeps a real address whole for display', () => {
     expect(toDisplayLoginId('ananya@neom.com', 'neommodular.com')).toBe('ananya@neom.com');
+  });
+});
+
+describe('qtyWithUnit', () => {
+  it('appends the unit when the item has one', () => {
+    expect(qtyWithUnit({ qty: 250, unit: 'pcs' })).toBe('250 pcs');
+  });
+
+  it('shows a bare number when no unit is recorded', () => {
+    expect(qtyWithUnit({ qty: 250, unit: '' })).toBe('250');
+    expect(qtyWithUnit({ qty: 250 })).toBe('250');
+  });
+
+  it('ignores a whitespace-only unit', () => {
+    expect(qtyWithUnit({ qty: 7, unit: '   ' })).toBe('7');
+  });
+});
+
+describe('totalQty', () => {
+  const line = (qty: number, unit: string) => ({ qty, unit });
+
+  it('sums quantities rather than counting lines', () => {
+    expect(totalQty({ items: [line(250, 'pcs'), line(40, 'pcs')] })).toBe('290 pcs');
+  });
+
+  it('drops the unit when lines disagree, since mixed units cannot be summed', () => {
+    expect(totalQty({ items: [line(10, 'kg'), line(4, 'box')] })).toBe('14');
+  });
+
+  it('drops the unit when any line is missing one', () => {
+    expect(totalQty({ items: [line(10, 'kg'), line(4, '')] })).toBe('14');
+  });
+
+  it('is zero for an order with no lines', () => {
+    expect(totalQty({ items: [] })).toBe('0');
   });
 });

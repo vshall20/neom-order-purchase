@@ -159,9 +159,34 @@ describe('item catalog', () => {
     await assertSucceeds(setDoc(doc(dbFor(env, UID.admin), 'itemCatalog/c2'), item));
   });
 
-  it('stops operators and inward managers adding items', async () => {
-    await assertFails(setDoc(doc(dbFor(env, UID.operator), 'itemCatalog/c3'), item));
+  it('lets an operator add an item, so naming a new material files it', async () => {
+    await assertSucceeds(setDoc(doc(dbFor(env, UID.operator), 'itemCatalog/c3'), item));
+  });
+
+  it('still stops an operator editing, repricing or disabling an existing item', async () => {
+    await seedDoc(env, 'itemCatalog/c1', item);
+    const db = dbFor(env, UID.operator);
+    await assertFails(updateDoc(doc(db, 'itemCatalog/c1'), { defaultPrice: 1 }));
+    await assertFails(updateDoc(doc(db, 'itemCatalog/c1'), { name: 'Renamed', nameLower: 'renamed' }));
+    await assertFails(updateDoc(doc(db, 'itemCatalog/c1'), { active: false }));
+  });
+
+  it('stops an inward manager adding items', async () => {
     await assertFails(setDoc(doc(dbFor(env, UID.inward), 'itemCatalog/c4'), item));
+  });
+
+  it('stops an operator adding a pre-disabled or negatively priced item', async () => {
+    await assertFails(
+      setDoc(doc(dbFor(env, UID.operator), 'itemCatalog/c5'), { ...item, active: false }),
+    );
+    await assertFails(
+      setDoc(doc(dbFor(env, UID.operator), 'itemCatalog/c6'), { ...item, defaultPrice: -1 }),
+    );
+  });
+
+  it('stops a user with no role assigned adding items', async () => {
+    await assertFails(setDoc(doc(dbFor(env, UID.pending), 'itemCatalog/c7'), item));
+    await assertFails(setDoc(doc(dbFor(env, UID.disabled), 'itemCatalog/c8'), item));
   });
 
   it('rejects an item with no name or a negative price', async () => {

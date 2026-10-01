@@ -39,6 +39,26 @@ export function fmtDateTime(d: Timestamp | Date | string | null | undefined): st
   });
 }
 
+/** "250 pcs", or just "250" when the item has no unit recorded. */
+export function qtyWithUnit(item: { qty: number; unit?: string }): string {
+  const unit = (item.unit ?? '').trim();
+  return unit ? `${item.qty} ${unit}` : String(item.qty);
+}
+
+/**
+ * Total quantity across an order's lines.
+ *
+ * Quantities only sum meaningfully when every line shares a unit — 10 kg plus
+ * 4 box is not 14 of anything — so the unit is appended only when the order is
+ * unambiguous, and dropped when it is mixed.
+ */
+export function totalQty(o: { items: readonly { qty: number; unit?: string }[] }): string {
+  const total = o.items.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+  const units = new Set(o.items.map((it) => (it.unit ?? '').trim()).filter(Boolean));
+  const allShareOneUnit = units.size === 1 && o.items.every((it) => (it.unit ?? '').trim());
+  return allShareOneUnit ? `${total} ${[...units][0]}` : String(total);
+}
+
 export function orderTotal(o: Pick<Order, 'items'>): number {
   return o.items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }

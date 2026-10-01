@@ -1,4 +1,9 @@
-import { addCatalogItem, findCatalogItem, setCatalogActive } from '../data/catalog';
+import {
+  addCatalogItem,
+  ensureCatalogEntries,
+  findCatalogItem,
+  setCatalogActive,
+} from '../data/catalog';
 import {
   completeOrder,
   createOrder,
@@ -106,6 +111,7 @@ function toOrderItems(lines: readonly FormLine[]): OrderItem[] {
       lineId: it.id,
       name: it.name.trim(),
       qty: Number(it.qty) || 0,
+      unit: it.unit.trim(),
       price: Number(it.price) || 0,
       received: 0,
     }));
@@ -118,9 +124,20 @@ function toRequirementItems(lines: readonly RequirementLine[]): OrderItem[] {
       lineId: it.id,
       name: it.name.trim(),
       qty: Number(it.qty) || 0,
+      unit: it.unit.trim(),
       price: 0,
       received: 0,
     }));
+}
+
+/** Tell the user when ordering an item also filed it in the catalog. */
+function reportNewCatalogItems(added: readonly string[]): void {
+  if (added.length === 0) return;
+  const label =
+    added.length === 1
+      ? `"${added[0]}" added to the item catalog.`
+      : `${added.length} new items added to the item catalog.`;
+  toast(`${label} Set a unit for it on the Item catalog screen.`);
 }
 
 async function submitCreateOrder(placeImmediately: boolean): Promise<void> {
@@ -144,6 +161,7 @@ async function submitCreateOrder(placeImmediately: boolean): Promise<void> {
       items,
       placeImmediately,
     });
+    void reportNewCatalogItems(await ensureCatalogEntries(profile, state.catalog, items));
     state.createForm = emptyCreateForm();
     state.view = placeImmediately ? 'pending' : 'dashboard';
     resetPaging();
@@ -166,6 +184,7 @@ async function submitRequirementForm(): Promise<void> {
 
   await run(async () => {
     await submitRequirement(profile, { note: f.note, items });
+    void reportNewCatalogItems(await ensureCatalogEntries(profile, state.catalog, items));
     state.reqForm = emptyReqForm();
     toast('Requirement submitted. A purchase manager will price it.');
   }, 'Could not submit the requirement.');
@@ -450,7 +469,7 @@ async function onClick(event: MouseEvent): Promise<void> {
 
   /* create-order form */
   if (el(t, '#add-line-btn')) {
-    state.createForm.items.push({ id: lineId(), name: '', qty: '', price: '' });
+    state.createForm.items.push({ id: lineId(), name: '', qty: '', price: '', unit: '' });
     render();
     return;
   }
@@ -468,7 +487,7 @@ async function onClick(event: MouseEvent): Promise<void> {
 
   /* requirement form */
   if (el(t, '#add-req-line-btn')) {
-    state.reqForm.items.push({ id: lineId(), name: '', qty: '' });
+    state.reqForm.items.push({ id: lineId(), name: '', qty: '', unit: '' });
     render();
     return;
   }
@@ -588,8 +607,11 @@ function onInput(event: Event): void {
     if (!line) return;
     if (ds.lineField === 'name') {
       line.name = value;
-      // Pre-fill the price from the catalog, but never overwrite a typed one.
       const match = findCatalogItem(state.catalog, value);
+      // The unit is descriptive, not something the user typed here, so it
+      // always tracks the matched catalog item and clears when there is none.
+      line.unit = match?.unit ?? '';
+      // Pre-fill the price from the catalog, but never overwrite a typed one.
       if (match && (!line.price || Number(line.price) === 0)) {
         line.price = String(match.defaultPrice);
         const priceInput = document.querySelector<HTMLInputElement>(
@@ -606,8 +628,10 @@ function onInput(event: Event): void {
   if (ds.reqId && ds.reqField) {
     const line = state.reqForm.items.find((it) => it.id === ds.reqId);
     if (!line) return;
-    if (ds.reqField === 'name') line.name = value;
-    else if (ds.reqField === 'qty') line.qty = value;
+    if (ds.reqField === 'name') {
+      line.name = value;
+      line.unit = findCatalogItem(state.catalog, value)?.unit ?? '';
+    } else if (ds.reqField === 'qty') line.qty = value;
     return;
   }
 

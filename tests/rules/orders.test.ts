@@ -47,7 +47,7 @@ describe('creating orders', () => {
       vendorLower: '',
       total: 0,
       placedAt: null,
-      items: [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 0, received: 0 }],
+      items: [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 0, received: 0 }],
       createdBy: { uid, name: uid },
     });
 
@@ -144,7 +144,7 @@ describe('processing a requirement', () => {
         vendorLower: '',
         total: 0,
         placedAt: null,
-        items: [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 0, received: 0 }],
+        items: [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 0, received: 0 }],
         createdBy: { uid: UID.operator, name: 'operator' },
       }),
     ),
@@ -154,7 +154,7 @@ describe('processing a requirement', () => {
     status: 'pending',
     vendor: 'Acme Supply Co.',
     vendorLower: 'acme supply co.',
-    items: [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 5, received: 0 }],
+    items: [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 5, received: 0 }],
     total: 50,
     placedAt: serverTimestamp(),
     processedBy: { uid: UID.purchase, name: 'pm' },
@@ -206,8 +206,8 @@ describe('placing a draft', () => {
 });
 
 describe('receiving material', () => {
-  const partly = [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 5, received: 4 }];
-  const fully = [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 5, received: 10 }];
+  const partly = [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 5, received: 4 }];
+  const fully = [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 5, received: 10 }];
 
   beforeEach(() => seedDoc(env, 'orders/p1', orderDoc()));
 
@@ -287,7 +287,7 @@ describe('completing an order', () => {
       'orders/r1',
       orderDoc({
         status: 'received',
-        items: [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 5, received: 10 }],
+        items: [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 5, received: 10 }],
       }),
     ),
   );

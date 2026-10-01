@@ -16,12 +16,15 @@ export interface FormLine {
   name: string;
   qty: string;
   price: string;
+  /** Filled in from the catalog when the item name matches one. */
+  unit: string;
 }
 
 export interface RequirementLine {
   id: string;
   name: string;
   qty: string;
+  unit: string;
 }
 
 export type Phase = 'loading' | 'signed-out' | 'pending-approval' | 'ready';
@@ -82,13 +85,13 @@ export function emptyCreateForm(): AppState['createForm'] {
   return {
     vendor: '',
     expected: '',
-    items: [{ id: lineId(), name: '', qty: '', price: '' }],
+    items: [{ id: lineId(), name: '', qty: '', price: '', unit: '' }],
     error: '',
   };
 }
 
 export function emptyReqForm(): AppState['reqForm'] {
-  return { note: '', items: [{ id: lineId(), name: '', qty: '' }], error: '' };
+  return { note: '', items: [{ id: lineId(), name: '', qty: '', unit: '' }], error: '' };
 }
 
 export const state: AppState = {

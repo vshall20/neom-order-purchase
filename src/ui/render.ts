@@ -23,8 +23,13 @@ export function statusesForView(view: View, role: AppRole | undefined): readonly
         : ['pending', 'partial', 'received'];
     case 'complete':
       return ['complete', 'received'];
+    case 'dashboard':
+      // Closed-out orders live in Completed orders. The dashboard is for work
+      // still in flight, so completed ones are excluded rather than pushing
+      // live orders off the first page.
+      return ['requirement', 'draft', 'pending', 'partial', 'received'];
     default:
-      return undefined; // dashboard: everything
+      return undefined;
   }
 }
 

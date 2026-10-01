@@ -5,7 +5,9 @@ import {
   materialDescription,
   orderReceivedFraction,
   orderTotal,
+  qtyWithUnit,
   statusLabel,
+  totalQty,
 } from '../domain/format';
 import { can } from '../domain/permissions';
 import { ORDER_STATUSES, type Order, type OrderStatus } from '../types';
@@ -14,6 +16,9 @@ import { emptyState, newOrderButton, pageHeader } from './chrome';
 import { icon } from './icons';
 
 /* ---------- shared bits ---------- */
+
+/** Statuses the dashboard never lists, so they are not offered as chips there. */
+const DASHBOARD_HIDDEN_STATUSES: readonly OrderStatus[] = ['complete'];
 
 const SEARCH_FIELDS = [
   { key: 'poNumber', label: 'PO number' },
@@ -31,6 +36,10 @@ const SEARCH_FIELDS = [
 export function searchBar(showStatusFilter: boolean): string {
   const searching = state.searchInput.trim().length > 0;
   const active = state.filter.statuses ?? [];
+  const chipStatuses =
+    state.view === 'dashboard'
+      ? ORDER_STATUSES.filter((s) => !DASHBOARD_HIDDEN_STATUSES.includes(s))
+      : ORDER_STATUSES;
   return `
   <div class="list-controls">
     <div class="search-box">
@@ -46,10 +55,12 @@ export function searchBar(showStatusFilter: boolean): string {
     ${
       showStatusFilter
         ? `<div class="filter-chips">
-            ${ORDER_STATUSES.map(
-              (s) =>
-                `<button class="chip ${active.includes(s) ? 'chip-on' : ''}" data-status-chip="${s}">${statusLabel(s)}</button>`,
-            ).join('')}
+            ${chipStatuses
+              .map(
+                (s) =>
+                  `<button class="chip ${active.includes(s) ? 'chip-on' : ''}" data-status-chip="${s}">${statusLabel(s)}</button>`,
+              )
+              .join('')}
           </div>`
         : ''
     }
@@ -110,7 +121,7 @@ export function orderRow(o: Order): string {
     <tr class="${o.deleted ? 'row-deleted' : ''}">
       <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
       <td class="vendor" data-label="Material">${materialDescription(o)}</td>
-      <td class="muted" data-label="Items">${o.items.length} line${o.items.length !== 1 ? 's' : ''}</td>
+      <td class="muted" data-label="Quantity">${escapeHtml(totalQty(o))}</td>
       <td class="mono" data-label="Total">${fmtMoney(orderTotal(o))}</td>
       <td data-label="Status"><span class="stamp ${o.status}">${statusLabel(o.status)}</span>${o.deleted ? '<span class="stamp deleted-tag">Deleted</span>' : ''}</td>
       <td class="muted" data-label="Created">${fmtDate(o.createdAt)}</td>
@@ -126,7 +137,7 @@ export function orderRow(o: Order): string {
 }
 
 const ORDER_TABLE_HEAD = `<thead><tr>
-  <th>PO number</th><th>Material description</th><th>Items</th>
+  <th>PO number</th><th>Material description</th><th>Quantity</th>
   <th>Total</th><th>Status</th><th>Created</th><th></th>
 </tr></thead>`;
 
@@ -179,7 +190,7 @@ export function requirementsQueueView(): string {
                  (o) => `
                <tr class="${o.deleted ? 'row-deleted' : ''}">
                  <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
-                 <td data-label="Requested items">${o.items.map((it) => `${escapeHtml(it.name)} <span class="muted">×${it.qty}</span>`).join('<br/>')}</td>
+                 <td data-label="Requested items">${o.items.map((it) => `${escapeHtml(it.name)} <span class="muted">×${escapeHtml(qtyWithUnit(it))}</span>`).join('<br/>')}</td>
                  <td class="muted" data-label="Note">${o.note ? escapeHtml(o.note) : '—'}</td>
                  <td class="muted" data-label="Submitted by">${escapeHtml(o.createdBy.name)}</td>
                  <td class="muted" data-label="Date">${fmtDate(o.createdAt)}</td>
@@ -207,14 +218,14 @@ export function pendingView(): string {
       drafts.length
         ? `<div class="muted section-label">Drafts — not yet placed</div>
            <div class="panel" style="margin-bottom:24px;">
-             <table><thead><tr><th>PO number</th><th>Vendor</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+             <table><thead><tr><th>PO number</th><th>Vendor</th><th>Quantity</th><th>Total</th><th>Status</th><th></th></tr></thead>
              <tbody>${drafts
                .map(
                  (o) => `
                <tr>
                  <td class="po-num" data-label="PO number">${escapeHtml(o.poNumber)}</td>
                  <td class="vendor" data-label="Vendor">${escapeHtml(o.vendor)}</td>
-                 <td class="muted" data-label="Items">${o.items.length} lines</td>
+                 <td class="muted" data-label="Quantity">${escapeHtml(totalQty(o))}</td>
                  <td class="mono" data-label="Total">${fmtMoney(orderTotal(o))}</td>
                  <td data-label="Status"><span class="stamp draft">Draft</span></td>
                  <td class="row-actions">

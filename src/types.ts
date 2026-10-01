@@ -79,6 +79,13 @@ export interface OrderItem {
   lineId: string;
   name: string;
   qty: number;
+  /**
+   * Unit of measure, copied from the catalog when the item was added.
+   * Snapshotted rather than looked up, so changing a catalog item's unit
+   * later cannot rewrite history on orders already placed. Empty for items
+   * that were not in the catalog at the time.
+   */
+  unit: string;
   /** Unit price in INR. Always 0 while the order is still a requirement. */
   price: number;
   /** Quantity received so far; drives partial/received status. */

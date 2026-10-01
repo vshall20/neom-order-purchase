@@ -83,7 +83,7 @@ export function orderDoc(overrides: OrderOverrides = {}): Record<string, unknown
     vendor: 'Acme Supply Co.',
     vendorLower: 'acme supply co.',
     note: '',
-    items: [{ lineId: 'l1', name: 'Bolt', qty: 10, price: 5, received: 0 }],
+    items: [{ lineId: 'l1', name: 'Bolt', qty: 10, unit: 'pcs', price: 5, received: 0 }],
     itemNames: ['bolt'],
     total: 50,
     expectedDate: null,
